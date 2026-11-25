@@ -1,3 +1,4 @@
+
 /**
  * Application entry point for rendering equipment and loan data.
  * @module app
@@ -11,21 +12,62 @@ window.addEventListener('DOMContentLoaded', start);
  * Initialise the application.
  */
 function start() {
+    setupCategoryFilter();
+    setupCheckoutModal();
+
     renderEquipmentList();
     renderActiveLoans();
-    setupCheckoutModal();
 }
 
 /**
- * GT-101: Render equipment cards with Checkout buttons.
+ * GT-102: Generate category options using equipment data.
+ */
+async function setupCategoryFilter() {
+    const select = document.getElementById('category-select');
+    const equipment = await dataService.getEquipment();
+
+    const categories = [...new Set(
+        equipment.map(item => item.category)
+    )].sort();
+
+    categories.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category;
+        option.textContent = category;
+
+        select.appendChild(option);
+    });
+
+    select.addEventListener('change', () => {
+        renderEquipmentList();
+    });
+}
+
+/**
+ * GT-101 / GT-102: Render equipment cards,
+ * applying the selected category filter.
  */
 async function renderEquipmentList() {
     const container = document.getElementById('equipment-list');
+    const select = document.getElementById('category-select');
+
     const items = await dataService.getEquipment();
+    const selectedCategory = select.value;
+
+    const filteredItems = selectedCategory === 'all'
+        ? items
+        : items.filter(item => item.category === selectedCategory);
 
     container.replaceChildren();
 
-    items.forEach(item => {
+    if (filteredItems.length === 0) {
+        const message = document.createElement('li');
+        message.textContent = 'No equipment found in this category.';
+        container.appendChild(message);
+        return;
+    }
+
+    filteredItems.forEach(item => {
         const card = document.createElement('li');
         card.classList.add('equipment-card');
 
